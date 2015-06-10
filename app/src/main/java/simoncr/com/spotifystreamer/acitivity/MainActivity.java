@@ -26,6 +26,8 @@ import com.spotify.sdk.android.player.ConnectionStateCallback;
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.ButterKnife;
+import butterknife.InjectView;
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Artist;
@@ -36,14 +38,17 @@ import retrofit.RetrofitError;
 import retrofit.client.Response;
 import simoncr.com.spotifystreamer.R;
 import simoncr.com.spotifystreamer.adapter.ArtistAdapter;
+import simoncr.com.spotifystreamer.model.ArtistParcelable;
 import simoncr.com.spotifystreamer.utils.SpotifyHandler;
 import simoncr.com.spotifystreamer.utils.Utils;
 
 
 public class MainActivity extends AppCompatActivity implements ConnectionStateCallback, SearchView.OnQueryTextListener,SearchView.OnCloseListener {
+    private static final String ARTIST_LIST = "artists";
     private static final int REQUEST_CODE = 1209;
-    private List<Artist> artistList;
-    private ListView listView;
+    private ArrayList<ArtistParcelable> artistList;
+
+    @InjectView(R.id.listView) ListView listView;
     private ArtistAdapter artistAdapter;
 
     @Override
@@ -51,10 +56,24 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+        ButterKnife.inject(this);
 
-        listView = (ListView)findViewById(R.id.listView);
-        artistList = new ArrayList<Artist>();
-        artistAdapter = new ArtistAdapter(this,artistList);
+        if (savedInstanceState == null) {
+            artistList = new ArrayList<ArtistParcelable>();
+
+
+            SpotifyHandler handler = SpotifyHandler.getInstance();
+            if (handler.getToken() == null) {
+                AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(SpotifyHandler.CLIENT_ID, AuthenticationResponse.Type.TOKEN, SpotifyHandler.REDIRECT_URI);
+                builder.setScopes(new String[]{"streaming"});
+                AuthenticationRequest request = builder.build();
+                AuthenticationClient.openLoginActivity(this, REQUEST_CODE, request);
+            }
+        } else {
+            artistList = savedInstanceState.getParcelableArrayList(ARTIST_LIST);
+        }
+
+        artistAdapter = new ArtistAdapter(this, artistList);
         listView.setAdapter(artistAdapter);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -62,14 +81,17 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
                 showTopTracks(artistList.get(i));
             }
         });
-
-        AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(SpotifyHandler.CLIENT_ID, AuthenticationResponse.Type.TOKEN,SpotifyHandler.REDIRECT_URI);
-        builder.setScopes(new String[]{"streaming"});
-        AuthenticationRequest request = builder.build();
-        AuthenticationClient.openLoginActivity(this, REQUEST_CODE, request);
     }
 
-    private void showTopTracks(Artist artist) {
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        if (artistList != null) {
+            outState.putParcelableArrayList(ARTIST_LIST, artistList);
+        }
+        super.onSaveInstanceState(outState);
+    }
+
+    private void showTopTracks(ArtistParcelable artist) {
         Intent intent = new Intent(this, TopTracksActivity.class);
         intent.putExtra(TopTracksActivity.ARTIST_ID, artist.id);
         intent.putExtra(TopTracksActivity.ARTIST_NAME, artist.name);
@@ -101,7 +123,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
             @Override
             public void success(ArtistsPager artistsPager, Response response) {
                 if (artistsPager.artists.items != null && artistsPager.artists.items.size() > 0) {
-                    artistList = artistsPager.artists.items;
+                    artistList = ArtistParcelable.getParcelableList(artistsPager.artists.items);
                     Handler mHandler = new Handler(getMainLooper());
                     mHandler.post(new Runnable() {
                         @Override

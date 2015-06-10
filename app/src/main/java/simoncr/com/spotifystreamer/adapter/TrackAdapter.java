@@ -14,29 +14,32 @@ import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
+import butterknife.ButterKnife;
+import butterknife.InjectView;
 import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.Image;
 import kaaes.spotify.webapi.android.models.Track;
 import simoncr.com.spotifystreamer.R;
+import simoncr.com.spotifystreamer.model.TrackParcelable;
 
 /**
  * Created by scascacha on 6/9/15.
  */
-public class TrackAdapter extends ArrayAdapter<Track> {
-    private List<Track> trackList;
+public class TrackAdapter extends ArrayAdapter<TrackParcelable> {
+    private List<TrackParcelable> trackList;
 
-    public TrackAdapter(Context context, List<Track> trackList) {
+    public TrackAdapter(Context context, List<TrackParcelable> trackList) {
         super(context, R.layout.track_item, trackList);
         this.trackList = trackList;
     }
 
-    public void setTrackList(List<Track> trackList) {
+    public void setTrackList(List<TrackParcelable> trackList) {
         this.trackList = trackList;
         notifyDataSetChanged();
     }
 
     @Override
-    public Track getItem(int position) {
+    public TrackParcelable getItem(int position) {
         return trackList.get(position);
     }
 
@@ -56,28 +59,22 @@ public class TrackAdapter extends ArrayAdapter<Track> {
             LayoutInflater inflater = LayoutInflater.from(getContext());
             convertView = inflater.inflate(R.layout.track_item,parent,false);
 
-            viewHolder = new ViewHolder();
-            viewHolder.ivImage = (ImageView)convertView.findViewById(R.id.imageView);
+            viewHolder = new ViewHolder(convertView);
 
-            viewHolder.txtAlbumName = (TextView)convertView.findViewById(R.id.albumName);
-            viewHolder.txtTrackName = (TextView)convertView.findViewById(R.id.trackName);
             convertView.setTag(viewHolder);
         } else {
             viewHolder = (ViewHolder)convertView.getTag();
         }
-        Track track = trackList.get(position);
+        TrackParcelable track = trackList.get(position);
 
         viewHolder.txtAlbumName.setText(track.album.name);
         viewHolder.txtTrackName.setText(track.name);
 
-        if (track.album.images != null && track.album.images.size() > 0) {
-            Image image = track.album.images.get(0);
-            if (image != null) {
-                Picasso.with(getContext())
-                        .load(image.url)
-                        .placeholder(R.drawable.spotify_logo)
-                        .into(viewHolder.ivImage);
-            }
+        if (track.album.image != null) {
+            Picasso.with(getContext())
+                    .load(track.album.image.url)
+                    .placeholder(R.drawable.spotify_logo)
+                    .into(viewHolder.ivImage);
         } else {
             viewHolder.ivImage.setImageResource(R.drawable.spotify_logo);
         }
@@ -85,9 +82,13 @@ public class TrackAdapter extends ArrayAdapter<Track> {
         return convertView;
     }
 
-    private class ViewHolder {
-        ImageView ivImage;
-        TextView txtAlbumName;
-        TextView txtTrackName;
+    static class ViewHolder {
+        @InjectView(R.id.imageView) ImageView ivImage;
+        @InjectView(R.id.albumName) TextView txtAlbumName;
+        @InjectView(R.id.trackName) TextView txtTrackName;
+
+        public ViewHolder(View view) {
+            ButterKnife.inject(this, view);
+        }
     }
 }

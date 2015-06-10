@@ -12,30 +12,34 @@ import com.squareup.picasso.Picasso;
 
 import org.w3c.dom.Text;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.ButterKnife;
+import butterknife.InjectView;
 import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.Image;
 import simoncr.com.spotifystreamer.R;
+import simoncr.com.spotifystreamer.model.ArtistParcelable;
 
 /**
  * Created by scascacha on 6/8/15.
  */
-public class ArtistAdapter extends ArrayAdapter<Artist> {
-    private List<Artist> artists;
+public class ArtistAdapter extends ArrayAdapter<ArtistParcelable> {
+    private ArrayList<ArtistParcelable> artists;
 
-    public ArtistAdapter(Context context, List<Artist> artists) {
+    public ArtistAdapter(Context context, ArrayList<ArtistParcelable> artists) {
         super(context, R.layout.artist_item, artists);
         this.artists = artists;
     }
 
-    public void setArtists(List<Artist> artists) {
+    public void setArtists(ArrayList<ArtistParcelable> artists) {
         this.artists = artists;
         notifyDataSetChanged();
     }
 
     @Override
-    public Artist getItem(int position) {
+    public ArtistParcelable getItem(int position) {
         return artists.get(position);
     }
 
@@ -55,23 +59,18 @@ public class ArtistAdapter extends ArrayAdapter<Artist> {
             LayoutInflater inflater = LayoutInflater.from(getContext());
             convertView = inflater.inflate(R.layout.artist_item,parent,false);
 
-            viewHolder = new ViewHolder();
-            viewHolder.ivImage = (ImageView)convertView.findViewById(R.id.imageView);
-            viewHolder.txtArtistName = (TextView)convertView.findViewById(R.id.textView);
+            viewHolder = new ViewHolder(convertView);
             convertView.setTag(viewHolder);
         } else {
             viewHolder = (ViewHolder)convertView.getTag();
         }
-        Artist artist = getItem(position);
+        ArtistParcelable artist = getItem(position);
         viewHolder.txtArtistName.setText(artist.name);
-        if (artist.images != null && artist.images.size() > 0) {
-            Image image = artist.images.get(0);
-            if (image != null) {
-                Picasso.with(getContext())
-                        .load(image.url)
-                        .placeholder(R.drawable.spotify_logo)
-                        .into(viewHolder.ivImage);
-            }
+        if (artist.image != null) {
+            Picasso.with(getContext())
+                    .load(artist.image.url)
+                    .placeholder(R.drawable.spotify_logo)
+                    .into(viewHolder.ivImage);
         } else {
             viewHolder.ivImage.setImageResource(R.drawable.spotify_logo);
         }
@@ -79,8 +78,12 @@ public class ArtistAdapter extends ArrayAdapter<Artist> {
         return convertView;
     }
 
-    private class ViewHolder {
-        ImageView ivImage;
-        TextView txtArtistName;
+    static class ViewHolder {
+        @InjectView(R.id.imageView) ImageView ivImage;
+        @InjectView(R.id.textView) TextView txtArtistName;
+
+        public ViewHolder(View view) {
+            ButterKnife.inject(this, view);
+        }
     }
 }
