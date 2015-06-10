@@ -7,6 +7,8 @@ import android.support.v4.view.MenuItemCompat;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.view.Menu;
@@ -44,17 +46,31 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
         setContentView(R.layout.activity_main);
 
         listView = (ListView)findViewById(R.id.listView);
         artistList = new ArrayList<Artist>();
         artistAdapter = new ArtistAdapter(this,artistList);
         listView.setAdapter(artistAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                showTopTracks(artistList.get(i));
+            }
+        });
 
         AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(SpotifyHandler.CLIENT_ID, AuthenticationResponse.Type.TOKEN,SpotifyHandler.REDIRECT_URI);
         builder.setScopes(new String[]{"streaming"});
         AuthenticationRequest request = builder.build();
         AuthenticationClient.openLoginActivity(this,REQUEST_CODE, request);
+    }
+
+    private void showTopTracks(Artist artist) {
+        Intent intent = new Intent(this, TopTracksActivity.class);
+        intent.putExtra(TopTracksActivity.ARTIST_ID, artist.id);
+        startActivity(intent);
     }
 
     @Override

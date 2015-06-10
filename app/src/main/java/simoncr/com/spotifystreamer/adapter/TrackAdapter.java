@@ -6,45 +6,46 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
-
-import org.w3c.dom.Text;
 
 import java.util.List;
 
 import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.Image;
+import kaaes.spotify.webapi.android.models.Track;
 import simoncr.com.spotifystreamer.R;
 
 /**
- * Created by scascacha on 6/8/15.
+ * Created by scascacha on 6/9/15.
  */
-public class ArtistAdapter extends ArrayAdapter<Artist> {
-    private List<Artist> artists;
+public class TrackAdapter extends ArrayAdapter<Track> {
+    private List<Track> trackList;
 
-    public ArtistAdapter(Context context, List<Artist> artists) {
-        super(context, R.layout.artist_item, artists);
-        this.artists = artists;
+    public TrackAdapter(Context context, List<Track> trackList) {
+        super(context, R.layout.track_item, trackList);
+        this.trackList = trackList;
     }
 
-    public void setArtists(List<Artist> artists) {
-        this.artists = artists;
+    public void setTrackList(List<Track> trackList) {
+        this.trackList = trackList;
         notifyDataSetChanged();
     }
 
     @Override
-    public Artist getItem(int position) {
-        return artists.get(position);
+    public Track getItem(int position) {
+        return trackList.get(position);
     }
 
     @Override
     public int getCount() {
-        if (artists == null) {
+        if (trackList == null) {
             return 0;
         }
-        return artists.size();
+        return trackList.size();
     }
 
     @Override
@@ -53,19 +54,24 @@ public class ArtistAdapter extends ArrayAdapter<Artist> {
 
         if (convertView == null) {
             LayoutInflater inflater = LayoutInflater.from(getContext());
-            convertView = inflater.inflate(R.layout.artist_item,parent,false);
+            convertView = inflater.inflate(R.layout.track_item,parent,false);
 
             viewHolder = new ViewHolder();
             viewHolder.ivImage = (ImageView)convertView.findViewById(R.id.imageView);
-            viewHolder.txtArtistName = (TextView)convertView.findViewById(R.id.textView);
+
+            viewHolder.txtAlbumName = (TextView)convertView.findViewById(R.id.albumName);
+            viewHolder.txtTrackName = (TextView)convertView.findViewById(R.id.trackName);
             convertView.setTag(viewHolder);
         } else {
             viewHolder = (ViewHolder)convertView.getTag();
         }
-        Artist artist = getItem(position);
-        viewHolder.txtArtistName.setText(artist.name);
-        if (artist.images != null && artist.images.size() > 0) {
-            Image image = artist.images.get(0);
+        Track track = trackList.get(position);
+
+        viewHolder.txtAlbumName.setText(track.album.name);
+        viewHolder.txtTrackName.setText(track.name);
+
+        if (track.album.images != null && track.album.images.size() > 0) {
+            Image image = track.album.images.get(0);
             if (image != null) {
                 Picasso.with(getContext())
                         .load(image.url)
@@ -81,6 +87,7 @@ public class ArtistAdapter extends ArrayAdapter<Artist> {
 
     private class ViewHolder {
         ImageView ivImage;
-        TextView txtArtistName;
+        TextView txtAlbumName;
+        TextView txtTrackName;
     }
 }
