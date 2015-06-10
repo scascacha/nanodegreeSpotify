@@ -70,6 +70,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
     private void showTopTracks(Artist artist) {
         Intent intent = new Intent(this, TopTracksActivity.class);
         intent.putExtra(TopTracksActivity.ARTIST_ID, artist.id);
+        intent.putExtra(TopTracksActivity.ARTIST_NAME, artist.name);
         startActivity(intent);
     }
 

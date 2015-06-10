@@ -2,6 +2,7 @@ package simoncr.com.spotifystreamer.acitivity;
 
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.ListView;
@@ -28,6 +29,7 @@ import simoncr.com.spotifystreamer.utils.SpotifyHandler;
  */
 public class TopTracksActivity extends AppCompatActivity {
     public static final String ARTIST_ID = "artistId";
+    public static final String ARTIST_NAME = "artistName";
 
     ListView listView;
     TrackAdapter trackAdapter;
@@ -40,6 +42,13 @@ public class TopTracksActivity extends AppCompatActivity {
         setContentView(R.layout.top_tracks_activity);
 
         artistId = getIntent().getStringExtra(ARTIST_ID);
+        String artistName = getIntent().getStringExtra(ARTIST_NAME);
+
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setSubtitle(artistName);
+        }
 
         listView = (ListView)findViewById(R.id.listView);
 
