@@ -1,7 +1,8 @@
 <resources>
     <string name="app_name">Spotify Streamer</string>
-
     <string name="search">Search</string>
-
+    <string name="no_artist_found">No Artist Found</string>
     <string name="top_track_title">Top 10 Tracks</string>
+    <string name="no_tracks_found">Can\'t find tracks for the Artist</string>
+    <string name="api_error">Ups! Can you please try later?!</string>
 </resources>

@@ -1,10 +1,12 @@
 package simoncr.com.spotifystreamer.acitivity;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Handler;
 import android.support.v4.view.MenuItemCompat;
 import android.os.Bundle;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -35,6 +37,7 @@ import retrofit.client.Response;
 import simoncr.com.spotifystreamer.R;
 import simoncr.com.spotifystreamer.adapter.ArtistAdapter;
 import simoncr.com.spotifystreamer.utils.SpotifyHandler;
+import simoncr.com.spotifystreamer.utils.Utils;
 
 
 public class MainActivity extends AppCompatActivity implements ConnectionStateCallback, SearchView.OnQueryTextListener,SearchView.OnCloseListener {
@@ -46,7 +49,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
 
         setContentView(R.layout.activity_main);
 
@@ -64,7 +66,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
         AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(SpotifyHandler.CLIENT_ID, AuthenticationResponse.Type.TOKEN,SpotifyHandler.REDIRECT_URI);
         builder.setScopes(new String[]{"streaming"});
         AuthenticationRequest request = builder.build();
-        AuthenticationClient.openLoginActivity(this,REQUEST_CODE, request);
+        AuthenticationClient.openLoginActivity(this, REQUEST_CODE, request);
     }
 
     private void showTopTracks(Artist artist) {
@@ -84,12 +86,12 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
             if (response.getType() == AuthenticationResponse.Type.TOKEN) {
                 SpotifyHandler handler = SpotifyHandler.getInstance();
                 handler.setToken(response.getAccessToken());
-                getArtists("");
             }
         }
     }
 
     private void getArtists(String searchText) {
+        final Context context = this;
         SpotifyHandler handler = SpotifyHandler.getInstance();
 
         SpotifyApi api = new SpotifyApi();
@@ -98,19 +100,24 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
         service.searchArtists(searchText, new Callback<ArtistsPager>() {
             @Override
             public void success(ArtistsPager artistsPager, Response response) {
-                artistList = artistsPager.artists.items;
-                Handler mHandler = new Handler(getMainLooper());
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        artistAdapter.setArtists(artistList);
-                    }
-                });
+                if (artistsPager.artists.items != null && artistsPager.artists.items.size() > 0) {
+                    artistList = artistsPager.artists.items;
+                    Handler mHandler = new Handler(getMainLooper());
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            artistAdapter.setArtists(artistList);
+                        }
+                    });
+                } else {
+                    Utils.showMessage(getString(R.string.no_artist_found), context);
+                }
             }
 
             @Override
             public void failure(RetrofitError error) {
-                Log.d("Artists Search Error: ",error.getLocalizedMessage());
+                Log.d("Artists Search Error: ", error.getLocalizedMessage());
+                Utils.showMessage(getString(R.string.api_error),context);
             }
         });
     }
@@ -168,7 +175,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
 
     @Override
     public boolean onClose() {
-        return false;
+        return true;
     }
 
     @Override
@@ -179,7 +186,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
 
     @Override
     public boolean onQueryTextChange(String s) {
-        getArtists(s);
-        return true;
+        //getArtists(s);
+        return false;
     }
 }

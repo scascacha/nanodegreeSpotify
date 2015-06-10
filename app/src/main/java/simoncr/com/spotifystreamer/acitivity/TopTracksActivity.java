@@ -1,5 +1,6 @@
 package simoncr.com.spotifystreamer.acitivity;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.ActionBar;
@@ -23,6 +24,7 @@ import retrofit.client.Response;
 import simoncr.com.spotifystreamer.R;
 import simoncr.com.spotifystreamer.adapter.TrackAdapter;
 import simoncr.com.spotifystreamer.utils.SpotifyHandler;
+import simoncr.com.spotifystreamer.utils.Utils;
 
 /**
  * Created by scascacha on 6/9/15.
@@ -61,6 +63,8 @@ public class TopTracksActivity extends AppCompatActivity {
 
     private void getArtistTopTracks() {
         if (artistId != null) {
+            final Context context = this;
+
             SpotifyHandler handler = SpotifyHandler.getInstance();
 
             Map<String,Object> params = new HashMap<String,Object>();
@@ -73,19 +77,24 @@ public class TopTracksActivity extends AppCompatActivity {
             service.getArtistTopTrack(artistId, params, new Callback<Tracks>() {
                 @Override
                 public void success(Tracks tracks, Response response) {
-                    trackList = tracks.tracks;
-                    Handler mHandler = new Handler(getMainLooper());
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            trackAdapter.setTrackList(trackList);
-                        }
-                    });
+                    if (tracks.tracks != null && tracks.tracks.size() > 0) {
+                        trackList = tracks.tracks;
+                        Handler mHandler = new Handler(getMainLooper());
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                trackAdapter.setTrackList(trackList);
+                            }
+                        });
+                    } else {
+                        Utils.showMessage(getString(R.string.no_tracks_found),context);
+                    }
                 }
 
                 @Override
                 public void failure(RetrofitError error) {
                     Log.d("Track error: ", error.getLocalizedMessage());
+                    Utils.showMessage(getString(R.string.api_error), context);
                 }
             });
         }
