@@ -1,9 +1,11 @@
 package simoncr.com.spotifystreamer.acitivity;
 
+import android.app.FragmentManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Handler;
+import android.os.PersistableBundle;
 import android.support.v4.view.MenuItemCompat;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
@@ -38,18 +40,19 @@ import retrofit.RetrofitError;
 import retrofit.client.Response;
 import simoncr.com.spotifystreamer.R;
 import simoncr.com.spotifystreamer.adapter.ArtistAdapter;
+import simoncr.com.spotifystreamer.fragments.ArtistsFragment;
 import simoncr.com.spotifystreamer.model.ArtistParcelable;
 import simoncr.com.spotifystreamer.utils.SpotifyHandler;
 import simoncr.com.spotifystreamer.utils.Utils;
 
 
 public class MainActivity extends AppCompatActivity implements ConnectionStateCallback, SearchView.OnQueryTextListener,SearchView.OnCloseListener {
-    private static final String ARTIST_LIST = "artists";
-    private static final int REQUEST_CODE = 1209;
-    private ArrayList<ArtistParcelable> artistList;
 
-    @InjectView(R.id.listView) ListView listView;
-    private ArtistAdapter artistAdapter;
+    public static final String ARTIST_LIST = "artists";
+    private static final int REQUEST_CODE = 1209;
+
+    private ArrayList<ArtistParcelable> artistList;
+    ArtistsFragment artistsFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,33 +76,27 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
             artistList = savedInstanceState.getParcelableArrayList(ARTIST_LIST);
         }
 
-        artistAdapter = new ArtistAdapter(this, artistList);
-        listView.setAdapter(artistAdapter);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                showTopTracks(artistList.get(i));
-            }
-        });
+        Bundle bundle = new Bundle();
+        bundle.putParcelableArrayList(ARTIST_LIST,artistList);
+
+        artistsFragment = new ArtistsFragment();
+        artistsFragment.setArguments(bundle);
+
+        FragmentManager fragmentManager = getFragmentManager();
+        fragmentManager.beginTransaction()
+                .replace(R.id.artists_list, artistsFragment)
+                .commit();
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        if (artistList != null) {
-            outState.putParcelableArrayList(ARTIST_LIST, artistList);
-        }
+        outState.putParcelableArrayList(ARTIST_LIST, artistList);
         super.onSaveInstanceState(outState);
     }
 
-    private void showTopTracks(ArtistParcelable artist) {
-        Intent intent = new Intent(this, TopTracksActivity.class);
-        intent.putExtra(TopTracksActivity.ARTIST_ID, artist.id);
-        intent.putExtra(TopTracksActivity.ARTIST_NAME, artist.name);
-        startActivity(intent);
-    }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
 
         if (requestCode == REQUEST_CODE) {
@@ -110,38 +107,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
                 handler.setToken(response.getAccessToken());
             }
         }
-    }
-
-    private void getArtists(String searchText) {
-        final Context context = this;
-        SpotifyHandler handler = SpotifyHandler.getInstance();
-
-        SpotifyApi api = new SpotifyApi();
-        api.setAccessToken(handler.getToken());
-        SpotifyService service = api.getService();
-        service.searchArtists(searchText, new Callback<ArtistsPager>() {
-            @Override
-            public void success(ArtistsPager artistsPager, Response response) {
-                if (artistsPager.artists.items != null && artistsPager.artists.items.size() > 0) {
-                    artistList = ArtistParcelable.getParcelableList(artistsPager.artists.items);
-                    Handler mHandler = new Handler(getMainLooper());
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            artistAdapter.setArtists(artistList);
-                        }
-                    });
-                } else {
-                    Utils.showMessage(getString(R.string.no_artist_found), context);
-                }
-            }
-
-            @Override
-            public void failure(RetrofitError error) {
-                Log.d("Artists Search Error: ", error.getLocalizedMessage());
-                Utils.showMessage(getString(R.string.api_error),context);
-            }
-        });
     }
 
     @Override
@@ -210,5 +175,33 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
     public boolean onQueryTextChange(String s) {
         //getArtists(s);
         return false;
+    }
+
+    private void getArtists(String searchText) {
+        final Context context = this;
+        SpotifyHandler handler = SpotifyHandler.getInstance();
+
+        handler.getArtists(searchText, context, new SpotifyHandler.SpotifyCallback<ArtistParcelable>() {
+            @Override
+            public void success(ArrayList<ArtistParcelable> list) {
+                artistList = list;
+                Handler mHandler = new Handler(context.getMainLooper());
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        artistsFragment.setArtistList(artistList);
+                    }
+                });
+                if (list == null || list.size() <= 0) {
+
+                    Utils.showMessage(getString(R.string.no_artist_found), context);
+                }
+            }
+
+            @Override
+            public void error(RetrofitError error) {
+                Utils.showMessage(getString(R.string.api_error), context);
+            }
+        });
     }
 }

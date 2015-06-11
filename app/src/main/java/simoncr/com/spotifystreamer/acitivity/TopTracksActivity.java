@@ -1,5 +1,6 @@
 package simoncr.com.spotifystreamer.acitivity;
 
+import android.app.FragmentManager;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
@@ -26,6 +27,7 @@ import retrofit.RetrofitError;
 import retrofit.client.Response;
 import simoncr.com.spotifystreamer.R;
 import simoncr.com.spotifystreamer.adapter.TrackAdapter;
+import simoncr.com.spotifystreamer.fragments.TracksFragment;
 import simoncr.com.spotifystreamer.model.TrackParcelable;
 import simoncr.com.spotifystreamer.utils.SpotifyHandler;
 import simoncr.com.spotifystreamer.utils.Utils;
@@ -34,16 +36,12 @@ import simoncr.com.spotifystreamer.utils.Utils;
  * Created by scascacha on 6/9/15.
  */
 public class TopTracksActivity extends AppCompatActivity {
-    public static final String TRACK_LIST = "artists";
-    public static final String ARTIST_ID = "artistId";
-    public static final String ARTIST_NAME = "artistName";
 
-    @InjectView(R.id.listView) ListView listView;
-
-    TrackAdapter trackAdapter;
+    TracksFragment tracksFragment;
     ArrayList<TrackParcelable> trackList;
     String artistId;
     String artistName;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,16 +51,16 @@ public class TopTracksActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) {
 
-            artistId = getIntent().getStringExtra(ARTIST_ID);
-            artistName = getIntent().getStringExtra(ARTIST_NAME);
+            artistId = getIntent().getStringExtra(TracksFragment.ARTIST_ID);
+            artistName = getIntent().getStringExtra(TracksFragment.ARTIST_NAME);
 
             trackList = new ArrayList<TrackParcelable>();
             getArtistTopTracks();
         } else {
-            artistId = savedInstanceState.getString(ARTIST_ID);
-            artistName = savedInstanceState.getString(ARTIST_NAME);
+            artistId = savedInstanceState.getString(TracksFragment.ARTIST_ID);
+            artistName = savedInstanceState.getString(TracksFragment.ARTIST_NAME);
 
-            trackList = savedInstanceState.getParcelableArrayList(TRACK_LIST);
+            trackList = savedInstanceState.getParcelableArrayList(TracksFragment.TRACK_LIST);
         }
 
         ActionBar actionBar = getSupportActionBar();
@@ -71,54 +69,49 @@ public class TopTracksActivity extends AppCompatActivity {
             actionBar.setSubtitle(artistName);
         }
 
-        trackAdapter = new TrackAdapter(this, trackList);
-        listView.setAdapter(trackAdapter);
+        Bundle bundle = new Bundle();
+        bundle.putParcelableArrayList(TracksFragment.TRACK_LIST,trackList);
+
+        tracksFragment = new TracksFragment();
+        tracksFragment.setArguments(bundle);
+
+        FragmentManager fragmentManager = getFragmentManager();
+        fragmentManager.beginTransaction()
+                .replace(R.id.tracks_list, tracksFragment)
+                .commit();
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        outState.putParcelableArrayList(TRACK_LIST, trackList);
-        outState.putString(ARTIST_ID,artistId);
-        outState.putString(ARTIST_NAME,artistName);
+        outState.putParcelableArrayList(TracksFragment.TRACK_LIST, trackList);
+        outState.putString(TracksFragment.ARTIST_ID,artistId);
+        outState.putString(TracksFragment.ARTIST_NAME,artistName);
         super.onSaveInstanceState(outState);
     }
 
     private void getArtistTopTracks() {
-        if (artistId != null) {
-            final Context context = this;
-
-            SpotifyHandler handler = SpotifyHandler.getInstance();
-
-            Map<String,Object> params = new HashMap<String,Object>();
-            params.put("country", "US");
-
-            SpotifyApi api = new SpotifyApi();
-            api.setAccessToken(handler.getToken());
-            SpotifyService service = api.getService();
-
-            service.getArtistTopTrack(artistId, params, new Callback<Tracks>() {
-                @Override
-                public void success(Tracks tracks, Response response) {
-                    if (tracks.tracks != null && tracks.tracks.size() > 0) {
-                        trackList = TrackParcelable.getParcelableList(tracks.tracks);
-                        Handler mHandler = new Handler(getMainLooper());
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                trackAdapter.setTrackList(trackList);
-                            }
-                        });
-                    } else {
-                        Utils.showMessage(getString(R.string.no_tracks_found),context);
+        final Context context = getApplication();
+        SpotifyHandler handler = SpotifyHandler.getInstance();
+        handler.getArtistTopTracks(artistId, context, new SpotifyHandler.SpotifyCallback<TrackParcelable>() {
+            @Override
+            public void success(ArrayList<TrackParcelable> list) {
+                trackList = list;
+                Handler mHandler = new Handler(getMainLooper());
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        tracksFragment.setTrackList(trackList);
                     }
+                });
+                if (trackList == null || trackList.size() <= 0) {
+                    Utils.showMessage(getString(R.string.no_tracks_found),context);
                 }
+            }
 
-                @Override
-                public void failure(RetrofitError error) {
-                    Log.d("Track error: ", error.getLocalizedMessage());
-                    Utils.showMessage(getString(R.string.api_error), context);
-                }
-            });
-        }
+            @Override
+            public void error(RetrofitError error) {
+                Utils.showMessage(getString(R.string.api_error), context);
+            }
+        });
     }
 }
