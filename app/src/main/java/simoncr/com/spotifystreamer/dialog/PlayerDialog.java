@@ -1,18 +1,19 @@
-package simoncr.com.spotifystreamer.fragments;
+package simoncr.com.spotifystreamer.dialog;
 
-import android.app.Fragment;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import com.spotify.sdk.android.player.AudioController;
 import com.spotify.sdk.android.player.Config;
 import com.spotify.sdk.android.player.ConnectionStateCallback;
 import com.spotify.sdk.android.player.Player;
@@ -33,9 +34,10 @@ import simoncr.com.spotifystreamer.model.TrackParcelable;
 import simoncr.com.spotifystreamer.utils.SpotifyHandler;
 
 /**
- * Created by scascacha on 6/11/15.
+ * Created by scascacha on 6/12/15.
  */
-public class PlayFragment extends Fragment implements ConnectionStateCallback,PlayerNotificationCallback,AudioController{
+public class PlayerDialog extends DialogFragment implements ConnectionStateCallback,PlayerNotificationCallback {
+
     public static final String TRACK = "track";
     public static final String TRACK_LIST = "trackList";
 
@@ -62,7 +64,6 @@ public class PlayFragment extends Fragment implements ConnectionStateCallback,Pl
 
     private PlayCallback playCallback;
 
-
     public interface PlayCallback {
         public void trackChanged(TrackParcelable track);
     }
@@ -71,14 +72,29 @@ public class PlayFragment extends Fragment implements ConnectionStateCallback,Pl
         this.playCallback = playCallback;
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.play_track_fragment, container, false);
-        ButterKnife.inject(this,rootView);
+    public void setCurrentTrack(TrackParcelable currentTrack) {
+        this.currentTrack = currentTrack;
+    }
 
-        Bundle bundle = getArguments();
-        currentTrack = bundle.getParcelable(TRACK);
-        trackList = bundle.getParcelableArrayList(TRACK_LIST);
+    public void setTrackList(ArrayList<TrackParcelable> trackList) {
+        this.trackList = trackList;
+    }
+
+    public PlayerDialog() {
+    }
+
+    @Override
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+
+        LayoutInflater inflater = getActivity().getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.play_track_fragment, null);
+        ButterKnife.inject(this,dialogView);
+
+        if (savedInstanceState != null) {
+            trackList = savedInstanceState.getParcelableArrayList(TRACK_LIST);
+            currentTrack = savedInstanceState.getParcelable(TRACK);
+        }
 
         for (int i=0;i<trackList.size();i++) {
             TrackParcelable track = trackList.get(i);
@@ -96,8 +112,8 @@ public class PlayFragment extends Fragment implements ConnectionStateCallback,Pl
         player = Spotify.getPlayer(config, getActivity(), new Player.InitializationObserver() {
             @Override
             public void onInitialized(Player player) {
-                player.addConnectionStateCallback(PlayFragment.this);
-                player.addPlayerNotificationCallback(PlayFragment.this);
+                player.addConnectionStateCallback(PlayerDialog.this);
+                player.addPlayerNotificationCallback(PlayerDialog.this);
                 player.play(currentTrack.uri);
                 updatePlayback(true);
             }
@@ -138,7 +154,7 @@ public class PlayFragment extends Fragment implements ConnectionStateCallback,Pl
                             }
                             seekBar.setProgress(playerState.positionInMs);
                             startTimeLabel.setText(msToTime(playerState.positionInMs));
-                            endTimeLabel.setText(msToTime(playerState.durationInMs-playerState.positionInMs));
+                            endTimeLabel.setText(msToTime(playerState.durationInMs - playerState.positionInMs));
                         }
                     });
                 }
@@ -146,7 +162,16 @@ public class PlayFragment extends Fragment implements ConnectionStateCallback,Pl
             }
         });
 
-        return rootView;
+        builder.setView(dialogView);
+
+        return builder.create();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putParcelableArrayList(TRACK_LIST,trackList);
+        outState.putParcelable(TRACK,currentTrack);
+        super.onSaveInstanceState(outState);
     }
 
     private String msToTime(int millis) {
@@ -211,7 +236,9 @@ public class PlayFragment extends Fragment implements ConnectionStateCallback,Pl
         }
 
         currentTrack = trackList.get(currentPosition);
-        playCallback.trackChanged(currentTrack);
+        if (playCallback != null) {
+            playCallback.trackChanged(currentTrack);
+        }
 
         if (currentTrack.album.image != null) {
             Picasso.with(getActivity())
@@ -281,45 +308,14 @@ public class PlayFragment extends Fragment implements ConnectionStateCallback,Pl
     }
 
     @Override
-    public void onStop() {
-        Spotify.destroyPlayer(this);
-        super.onStop();
+    public void onDismiss(DialogInterface dialog) {
+        player.pause();
+        super.onDismiss(dialog);
     }
 
     @Override
-    public void onDestroyView() {
-        Spotify.destroyPlayer(this);
-        super.onDestroyView();
-    }
-
-
-    @Override
-    public void start() {
-
-    }
-
-    @Override
-    public void stop() {
-
-    }
-
-    @Override
-    public int onAudioDataDelivered(short[] shorts, int i, int i1, int i2) {
-        return 0;
-    }
-
-    @Override
-    public void onAudioFlush() {
-
-    }
-
-    @Override
-    public void onAudioPaused() {
-
-    }
-
-    @Override
-    public void onAudioResumed() {
-
+    public void onDestroy() {
+        Spotify.destroyPlayer(player);
+        super.onDestroy();
     }
 }

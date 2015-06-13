@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="playback_button_witdh">30dp</dimen>
+    <dimen name="playback_button_height">30dp</dimen>
+    <dimen name="playback_button_space">10dp</dimen>
+
+    <dimen name="album_size">150dp</dimen>
+</resources>

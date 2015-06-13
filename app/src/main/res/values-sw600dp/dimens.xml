@@ -1,0 +1,9 @@
+<resources>
+    <dimen name="playback_button_witdh">60dp</dimen>
+    <dimen name="playback_button_height">60dp</dimen>
+    <dimen name="playback_button_space">15dp</dimen>
+
+    <dimen name="album_size">300dp</dimen>
+
+    <dimen name="track_info_text_size">18dp</dimen>
+</resources>

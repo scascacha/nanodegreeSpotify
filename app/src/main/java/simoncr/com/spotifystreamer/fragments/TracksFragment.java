@@ -1,7 +1,6 @@
 package simoncr.com.spotifystreamer.fragments;
 
 import android.app.Fragment;
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +15,7 @@ import butterknife.InjectView;
 import simoncr.com.spotifystreamer.R;
 import simoncr.com.spotifystreamer.acitivity.PlayActivity;
 import simoncr.com.spotifystreamer.adapter.TrackAdapter;
+import simoncr.com.spotifystreamer.dialog.PlayerDialog;
 import simoncr.com.spotifystreamer.model.TrackParcelable;
 
 /**
@@ -52,10 +52,16 @@ public class TracksFragment extends Fragment {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                /*
                 Intent intent = new Intent(getActivity(), PlayActivity.class);
                 intent.putExtra(PlayFragment.TRACK,trackList.get(i));
                 intent.putExtra(PlayFragment.TRACK_LIST,trackList);
                 startActivity(intent);
+                */
+                PlayerDialog playerDialog = new PlayerDialog();
+                playerDialog.setTrackList(trackList);
+                playerDialog.setCurrentTrack(trackList.get(i));
+                playerDialog.show(getFragmentManager(),"player");
             }
         });
 

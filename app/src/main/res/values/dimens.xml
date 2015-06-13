@@ -7,6 +7,7 @@
 
     <dimen name="playback_button_witdh">50dp</dimen>
     <dimen name="playback_button_height">50dp</dimen>
+    <dimen name="playback_button_space">15dp</dimen>
 
     <dimen name="album_size">200dp</dimen>
 
