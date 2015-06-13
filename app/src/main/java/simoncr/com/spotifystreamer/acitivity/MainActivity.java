@@ -41,18 +41,23 @@ import retrofit.client.Response;
 import simoncr.com.spotifystreamer.R;
 import simoncr.com.spotifystreamer.adapter.ArtistAdapter;
 import simoncr.com.spotifystreamer.fragments.ArtistsFragment;
+import simoncr.com.spotifystreamer.fragments.TracksFragment;
 import simoncr.com.spotifystreamer.model.ArtistParcelable;
+import simoncr.com.spotifystreamer.model.TrackParcelable;
 import simoncr.com.spotifystreamer.utils.SpotifyHandler;
 import simoncr.com.spotifystreamer.utils.Utils;
 
 
-public class MainActivity extends AppCompatActivity implements ConnectionStateCallback, SearchView.OnQueryTextListener,SearchView.OnCloseListener {
+public class MainActivity extends AppCompatActivity implements ConnectionStateCallback, SearchView.OnQueryTextListener,SearchView.OnCloseListener, TracksFragment.TracksCallbak, ArtistsFragment.ArtistsCallback {
 
     public static final String ARTIST_LIST = "artists";
     private static final int REQUEST_CODE = 1209;
 
     private ArrayList<ArtistParcelable> artistList;
+    private Boolean twoPane;
     ArtistsFragment artistsFragment;
+    TracksFragment tracksFragment;
+    ArrayList<TrackParcelable> trackList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +65,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
 
         setContentView(R.layout.activity_main);
         ButterKnife.inject(this);
+
+        twoPane = getResources().getBoolean(R.bool.dual_pane);
 
         if (savedInstanceState == null) {
             artistList = new ArrayList<ArtistParcelable>();
@@ -74,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
             }
         } else {
             artistList = savedInstanceState.getParcelableArrayList(ARTIST_LIST);
+            trackList = savedInstanceState.getParcelableArrayList(TracksFragment.TRACK_LIST);
         }
 
         Bundle bundle = new Bundle();
@@ -81,16 +89,31 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
 
         artistsFragment = new ArtistsFragment();
         artistsFragment.setArguments(bundle);
+        artistsFragment.setArtistsCallback(this);
 
         FragmentManager fragmentManager = getFragmentManager();
         fragmentManager.beginTransaction()
                 .replace(R.id.artists_list, artistsFragment)
                 .commit();
+
+        if (twoPane) {
+            Bundle tracksBundle = new Bundle();
+            tracksBundle.putParcelableArrayList(TracksFragment.TRACK_LIST,trackList);
+
+            tracksFragment = new TracksFragment();
+            tracksFragment.setTracksCallbak(this);
+            tracksFragment.setArguments(tracksBundle);
+
+            fragmentManager.beginTransaction()
+                    .replace(R.id.tracks_container, tracksFragment)
+                    .commit();
+        }
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         outState.putParcelableArrayList(ARTIST_LIST, artistList);
+        outState.putParcelableArrayList(TracksFragment.TRACK_LIST, trackList);
         super.onSaveInstanceState(outState);
     }
 
@@ -129,8 +152,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
-
 
         return super.onOptionsItemSelected(item);
     }
@@ -203,5 +224,16 @@ public class MainActivity extends AppCompatActivity implements ConnectionStateCa
                 Utils.showMessage(getString(R.string.api_error), context);
             }
         });
+    }
+
+    @Override
+    public void didGetTracks(ArrayList<TrackParcelable> tracks) {
+        trackList = tracks;
+        tracksFragment.setTrackList(trackList);
+    }
+
+    @Override
+    public void didSelectArtist(ArtistParcelable artist) {
+        tracksFragment.getArtistTopTracks(artist.id,this);
     }
 }

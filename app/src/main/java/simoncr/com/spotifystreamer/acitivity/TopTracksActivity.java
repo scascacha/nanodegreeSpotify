@@ -35,7 +35,7 @@ import simoncr.com.spotifystreamer.utils.Utils;
 /**
  * Created by scascacha on 6/9/15.
  */
-public class TopTracksActivity extends AppCompatActivity {
+public class TopTracksActivity extends AppCompatActivity implements TracksFragment.TracksCallbak {
 
     TracksFragment tracksFragment;
     ArrayList<TrackParcelable> trackList;
@@ -49,13 +49,16 @@ public class TopTracksActivity extends AppCompatActivity {
         setContentView(R.layout.top_tracks_activity);
         ButterKnife.inject(this);
 
+        tracksFragment = new TracksFragment();
+        tracksFragment.setTracksCallbak(this);
+
         if (savedInstanceState == null) {
 
             artistId = getIntent().getStringExtra(TracksFragment.ARTIST_ID);
             artistName = getIntent().getStringExtra(TracksFragment.ARTIST_NAME);
 
             trackList = new ArrayList<TrackParcelable>();
-            getArtistTopTracks();
+            tracksFragment.getArtistTopTracks(artistId,this);
         } else {
             artistId = savedInstanceState.getString(TracksFragment.ARTIST_ID);
             artistName = savedInstanceState.getString(TracksFragment.ARTIST_NAME);
@@ -63,17 +66,17 @@ public class TopTracksActivity extends AppCompatActivity {
             trackList = savedInstanceState.getParcelableArrayList(TracksFragment.TRACK_LIST);
         }
 
+
+        Bundle bundle = new Bundle();
+        bundle.putParcelableArrayList(TracksFragment.TRACK_LIST,trackList);
+
+        tracksFragment.setArguments(bundle);
+
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setSubtitle(artistName);
         }
-
-        Bundle bundle = new Bundle();
-        bundle.putParcelableArrayList(TracksFragment.TRACK_LIST,trackList);
-
-        tracksFragment = new TracksFragment();
-        tracksFragment.setArguments(bundle);
 
         FragmentManager fragmentManager = getFragmentManager();
         fragmentManager.beginTransaction()
@@ -89,29 +92,9 @@ public class TopTracksActivity extends AppCompatActivity {
         super.onSaveInstanceState(outState);
     }
 
-    private void getArtistTopTracks() {
-        final Context context = getApplication();
-        SpotifyHandler handler = SpotifyHandler.getInstance();
-        handler.getArtistTopTracks(artistId, context, new SpotifyHandler.SpotifyCallback<TrackParcelable>() {
-            @Override
-            public void success(ArrayList<TrackParcelable> list) {
-                trackList = list;
-                Handler mHandler = new Handler(getMainLooper());
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        tracksFragment.setTrackList(trackList);
-                    }
-                });
-                if (trackList == null || trackList.size() <= 0) {
-                    Utils.showMessage(getString(R.string.no_tracks_found),context);
-                }
-            }
-
-            @Override
-            public void error(RetrofitError error) {
-                Utils.showMessage(getString(R.string.api_error), context);
-            }
-        });
+    @Override
+    public void didGetTracks(ArrayList<TrackParcelable> tracks) {
+        trackList = tracks;
+        tracksFragment.setTrackList(trackList);
     }
 }

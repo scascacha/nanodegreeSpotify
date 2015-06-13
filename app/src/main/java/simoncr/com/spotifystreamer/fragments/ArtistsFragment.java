@@ -45,7 +45,18 @@ public class ArtistsFragment extends Fragment {
     @InjectView(R.id.listView)
     ListView listView;
 
+    Boolean twoPane = false;
+
     private ArtistAdapter artistAdapter;
+    private ArtistsCallback artistsCallback;
+
+    public interface ArtistsCallback {
+        public void didSelectArtist(ArtistParcelable artist);
+    }
+
+    public void setArtistsCallback(ArtistsCallback artistsCallback) {
+        this.artistsCallback = artistsCallback;
+    }
 
     public void setArtistList(ArrayList<ArtistParcelable> artistList) {
         this.artistList = artistList;
@@ -58,6 +69,8 @@ public class ArtistsFragment extends Fragment {
 
         View rootView = inflater.inflate(R.layout.artists_fragment, container, false);
         ButterKnife.inject(this, rootView);
+
+        twoPane = getResources().getBoolean(R.bool.dual_pane);
 
         Bundle args = getArguments();
         artistList = args.getParcelableArrayList(MainActivity.ARTIST_LIST);
@@ -76,9 +89,15 @@ public class ArtistsFragment extends Fragment {
     }
 
     private void showTopTracks(ArtistParcelable artist) {
-        Intent intent = new Intent(getActivity(), TopTracksActivity.class);
-        intent.putExtra(TracksFragment.ARTIST_ID, artist.id);
-        intent.putExtra(TracksFragment.ARTIST_NAME, artist.name);
-        startActivity(intent);
+        if (twoPane) {
+            if (artistsCallback != null) {
+                artistsCallback.didSelectArtist(artist);
+            }
+        } else {
+            Intent intent = new Intent(getActivity(), TopTracksActivity.class);
+            intent.putExtra(TracksFragment.ARTIST_ID, artist.id);
+            intent.putExtra(TracksFragment.ARTIST_NAME, artist.name);
+            startActivity(intent);
+        }
     }
 }
